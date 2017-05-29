@@ -561,7 +561,7 @@ class DefaultExpressionConverter : JavaElementVisitor(), ExpressionConverter {
 
         val target = expression.resolve()
 
-        val isNullable = target is PsiVariable && isNullable(target)
+        val isNullable = target is PsiVariable && isNullable(target, expression)
 
         val qualifier = expression.qualifierExpression
 
@@ -616,8 +616,9 @@ class DefaultExpressionConverter : JavaElementVisitor(), ExpressionConverter {
             identifier
     }
 
-    private fun isNullable(target: PsiVariable): Boolean {
-        if (typeConverter.variableNullability(target).isNullable(codeConverter.settings)) return true
+    private fun isNullable(target: PsiVariable, referenceExpression: PsiReferenceExpression): Boolean {
+
+        if (typeConverter.variableReferenceNullability(target, referenceExpression).isNullable(codeConverter.settings)) return true
 
         if (!converter.inConversionScope(target)) return false
 
@@ -636,7 +637,8 @@ class DefaultExpressionConverter : JavaElementVisitor(), ExpressionConverter {
             else -> return false
         }
 
-        if (converter.shouldDeclareVariableType(target, converter.typeConverter.convertVariableType(target), canChangeType)) return false
+        val variableType =  converter.typeConverter.convertVariableType(target)
+        if (converter.shouldDeclareVariableType(target, variableType, canChangeType)) return variableType.isNullable
 
         // if variable type won't be specified then check nullability of the initializer
         return codeConverter.convertExpression(target.initializer).isNullable
